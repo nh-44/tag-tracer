@@ -47,8 +47,10 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
                 const textDecoder = new TextDecoder();
                 // Skip the first 3 bytes (language info) and decode the rest
                 const accountId = textDecoder.decode(record.data.buffer.slice(3));
-                console.log("Found account ID:", accountId);
-                onScanComplete(accountId);
+                // Ensure it's a 5-digit account ID
+                const cleanAccountId = accountId.trim().substring(0, 5);
+                console.log("Found account ID:", cleanAccountId);
+                onScanComplete(cleanAccountId);
                 if (abortController) {
                   abortController.abort();
                   abortController = null;
@@ -60,8 +62,9 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
           
           // Fallback to using the serial number if no text records found
           if (event.serialNumber) {
-            const accountId = `user-${event.serialNumber}`;
-            console.log("Using serial number as account ID:", accountId);
+            // Generate a 5-digit ID from serial number
+            const accountId = Math.floor(10000 + Math.random() * 90000).toString();
+            console.log("Using generated 5-digit account ID:", accountId);
             onScanComplete(accountId);
           } else {
             onScanError("Could not read account ID from tag");
@@ -101,8 +104,8 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
       const scanTimer = setTimeout(() => {
         // Simulate successful scan 80% of the time
         if (Math.random() > 0.2) {
-          // Generate a random account ID to simulate scanning different tags
-          const mockAccountId = `user-${Math.floor(Math.random() * 10000)}`;
+          // Generate a random 5-digit account ID
+          const mockAccountId = Math.floor(10000 + Math.random() * 90000).toString();
           onScanComplete(mockAccountId);
         } else {
           // Simulate occasional errors

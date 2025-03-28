@@ -1,15 +1,23 @@
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import NfcInfo from "@/components/NfcInfo";
 import NfcScanner from "@/components/NfcScanner";
+import AdminPanel from "@/components/AdminPanel";
+import ScanHistory from "@/components/ScanHistory";
+import { History } from "lucide-react";
+
+interface ScanRecord {
+  accountId: string;
+  timestamp: number;
+}
 
 const Index = () => {
   const [lastScannedId, setLastScannedId] = useState<string | null>(null);
   const [lastScannedUrl, setLastScannedUrl] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleScan = (accountId: string) => {
     setLastScannedId(accountId);
@@ -20,6 +28,37 @@ const Index = () => {
     // Open URL in browser
     window.open(url, "_blank");
     toast.success("NFC tag scanned successfully!");
+    
+    // Save to scan history
+    saveScanToHistory(accountId);
+  };
+
+  const saveScanToHistory = (accountId: string) => {
+    const newScan: ScanRecord = {
+      accountId,
+      timestamp: Date.now()
+    };
+    
+    try {
+      const storedHistory = localStorage.getItem("scanHistory");
+      let history: ScanRecord[] = [];
+      
+      if (storedHistory) {
+        history = JSON.parse(storedHistory);
+      }
+      
+      // Add new scan at the beginning
+      history.unshift(newScan);
+      
+      // Keep only the last 100 scans
+      if (history.length > 100) {
+        history = history.slice(0, 100);
+      }
+      
+      localStorage.setItem("scanHistory", JSON.stringify(history));
+    } catch (e) {
+      console.error("Failed to save scan history:", e);
+    }
   };
 
   const startScanning = () => {
@@ -30,6 +69,10 @@ const Index = () => {
   const handleScanError = (error: string) => {
     setIsScanning(false);
     toast.error(`Scan failed: ${error}`);
+  };
+
+  const handleWriteComplete = (accountId: string) => {
+    toast.success(`Successfully wrote ID ${accountId} to NFC tag`);
   };
 
   // Simulate NFC permission request on component mount
@@ -48,7 +91,7 @@ const Index = () => {
       <h1 className="text-3xl font-bold text-blue-800 mb-2 mt-8">Tag Tracer</h1>
       <p className="text-gray-600 mb-8 text-center">Scan NFC tags to automatically open profile URLs</p>
       
-      <Card className="w-full max-w-md p-6 shadow-lg border-blue-100 mb-8">
+      <Card className="w-full max-w-md p-6 shadow-lg border-blue-100 mb-4">
         <div className="flex flex-col items-center">
           <NfcScanner 
             isScanning={isScanning} 
@@ -63,6 +106,19 @@ const Index = () => {
           >
             {isScanning ? "Scanning..." : "Scan NFC Tag"}
           </Button>
+          
+          <div className="flex gap-4 mt-6 w-full justify-center">
+            <Button 
+              variant="outline" 
+              className="bg-gray-100"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              {showHistory ? "Hide History" : "Show History"}
+            </Button>
+            
+            <AdminPanel onWriteComplete={handleWriteComplete} />
+          </div>
         </div>
       </Card>
       
@@ -72,6 +128,8 @@ const Index = () => {
           url={lastScannedUrl} 
         />
       )}
+      
+      <ScanHistory visible={showHistory} />
       
       <footer className="mt-auto pt-6 pb-4 text-center text-gray-500 text-sm">
         <p>This app works offline • No internet connection required</p>
