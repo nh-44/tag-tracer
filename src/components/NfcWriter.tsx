@@ -42,14 +42,17 @@ const NfcWriter = ({ onWriteComplete, onWriteError }: NfcWriterProps) => {
         
         toast.info("Hold an NFC tag near your device...");
         
-        // Create a text record with the account ID
+        // Improved writing format - ensure we write as plain text
+        // Create a proper text record with the account ID
         await ndef.write({
           records: [{ 
             recordType: "text", 
-            data: accountId 
+            data: accountId,
+            lang: "en" // Explicitly set language code
           }]
         });
         
+        console.log("Successfully wrote to NFC tag:", accountId);
         onWriteComplete(accountId);
         toast.success("Account ID written successfully!");
       } else {

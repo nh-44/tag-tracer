@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Scan } from "lucide-react";
 
@@ -47,16 +46,43 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
               
               if (record.recordType === "text") {
                 const textDecoder = new TextDecoder();
-                // Skip the first 3 bytes (language info) and decode the rest
-                const rawText = textDecoder.decode(record.data.buffer.slice(3));
+                
+                // The issue might be in how we handle the language code
+                // Let's log the full buffer and try different approaches
+                console.log("Full data buffer:", record.data);
+                
+                // First approach: Skip language code byte properly
+                // NDEF Text Record format: [status byte][language code length][language code][actual text]
+                const data = new Uint8Array(record.data.buffer);
+                const languageCodeLength = data[0] & 0x3F; // Get the language code length from status byte
+                console.log("Language code length:", languageCodeLength);
+                
+                // Extract content starting after the language code
+                const startIndex = 1 + languageCodeLength; // 1 status byte + language code
+                const textContent = textDecoder.decode(data.slice(startIndex));
+                console.log("Text content (better method):", textContent);
+                
+                // Fallback: just get the whole text content
+                const rawText = textDecoder.decode(record.data.buffer);
                 console.log("Raw text content:", rawText);
                 
-                // Extract all digits from the read content - ensure we get all digits
-                const digits = rawText.replace(/\D/g, '');
+                // Extract all digits from either approach
+                let digits = textContent.replace(/\D/g, '');
+                if (!digits || digits.length === 0) {
+                  digits = rawText.replace(/\D/g, '');
+                }
                 console.log("Extracted digits:", digits);
                 
-                // Take up to 5 digits, if less than 5 we pad with zeros
-                const cleanAccountId = digits.substring(0, 5).padStart(5, '0');
+                // If we have a 5-digit number, use it directly
+                // Otherwise, take what we have (up to 5 digits)
+                let cleanAccountId = digits;
+                if (digits.length > 5) {
+                  cleanAccountId = digits.substring(0, 5);
+                } else if (digits.length < 5) {
+                  // Only pad if we don't have 5 digits
+                  cleanAccountId = digits.padStart(5, '0');
+                }
+                
                 console.log("Final account ID:", cleanAccountId);
                 
                 onScanComplete(cleanAccountId);
