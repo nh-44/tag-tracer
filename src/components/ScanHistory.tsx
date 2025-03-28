@@ -39,7 +39,7 @@ const ScanHistory = ({ visible }: ScanHistoryProps) => {
   return (
     <div className="w-full max-w-md mx-auto mt-6 bg-white rounded-lg shadow-md p-4">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold flex items-center">
+        <h2 className="text-xl font-bold flex items-center text-blue-700">
           <History className="mr-2 text-blue-600" />
           Scan History
         </h2>
@@ -47,36 +47,38 @@ const ScanHistory = ({ visible }: ScanHistoryProps) => {
           variant="outline" 
           size="sm" 
           onClick={clearHistory}
-          className="text-red-500 hover:text-red-700"
+          className="text-red-500 hover:text-red-700 border-red-200 hover:bg-red-50"
         >
-          Clear
+          Clear History
         </Button>
       </div>
 
       {scanHistory.length === 0 ? (
         <p className="text-center text-gray-500 py-4">No scan history available</p>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Account ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Time</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {scanHistory.map((record, index) => {
-              const date = new Date(record.timestamp);
-              return (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{record.accountId}</TableCell>
-                  <TableCell>{date.toLocaleDateString()}</TableCell>
-                  <TableCell>{date.toLocaleTimeString()}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-blue-50">
+                <TableHead className="font-medium">Account ID</TableHead>
+                <TableHead className="font-medium">Date</TableHead>
+                <TableHead className="font-medium">Time</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {scanHistory.map((record, index) => {
+                const date = new Date(record.timestamp);
+                return (
+                  <TableRow key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                    <TableCell className="font-medium text-blue-700">{record.accountId}</TableCell>
+                    <TableCell>{date.toLocaleDateString()}</TableCell>
+                    <TableCell>{date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );

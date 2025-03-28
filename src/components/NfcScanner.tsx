@@ -43,12 +43,16 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
           // Try to read text records from the tag
           if (event.message && event.message.records) {
             for (const record of event.message.records) {
+              console.log("Record type:", record.recordType);
+              
               if (record.recordType === "text") {
                 const textDecoder = new TextDecoder();
                 // Skip the first 3 bytes (language info) and decode the rest
                 const accountId = textDecoder.decode(record.data.buffer.slice(3));
-                // Ensure it's a 5-digit account ID
-                const cleanAccountId = accountId.trim().substring(0, 5);
+                // Extract all digits from the read content
+                const digits = accountId.replace(/\D/g, '');
+                // Take the first 5 digits, if less than 5 we use what we have
+                const cleanAccountId = digits.substring(0, 5).padStart(5, '0');
                 console.log("Found account ID:", cleanAccountId);
                 onScanComplete(cleanAccountId);
                 if (abortController) {
@@ -62,9 +66,13 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
           
           // Fallback to using the serial number if no text records found
           if (event.serialNumber) {
-            // Generate a 5-digit ID from serial number
-            const accountId = Math.floor(10000 + Math.random() * 90000).toString();
-            console.log("Using generated 5-digit account ID:", accountId);
+            console.log("Using serial number:", event.serialNumber);
+            // Generate a 5-digit ID from serial number hash
+            const hashCode = Array.from(event.serialNumber).reduce(
+              (acc: number, char: string) => (acc * 31 + char.charCodeAt(0)) & 0xffffffff, 0
+            );
+            const accountId = String(Math.abs(hashCode) % 100000).padStart(5, '0');
+            console.log("Generated account ID from serial:", accountId);
             onScanComplete(accountId);
           } else {
             onScanError("Could not read account ID from tag");
@@ -104,8 +112,8 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
       const scanTimer = setTimeout(() => {
         // Simulate successful scan 80% of the time
         if (Math.random() > 0.2) {
-          // Generate a random 5-digit account ID
-          const mockAccountId = Math.floor(10000 + Math.random() * 90000).toString();
+          // Generate a random 5-digit account ID or use demo "12345"
+          const mockAccountId = Math.random() > 0.5 ? "12345" : Math.floor(10000 + Math.random() * 90000).toString();
           onScanComplete(mockAccountId);
         } else {
           // Simulate occasional errors
