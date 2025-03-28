@@ -48,12 +48,17 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
               if (record.recordType === "text") {
                 const textDecoder = new TextDecoder();
                 // Skip the first 3 bytes (language info) and decode the rest
-                const accountId = textDecoder.decode(record.data.buffer.slice(3));
-                // Extract all digits from the read content
-                const digits = accountId.replace(/\D/g, '');
-                // Take the first 5 digits, if less than 5 we use what we have
+                const rawText = textDecoder.decode(record.data.buffer.slice(3));
+                console.log("Raw text content:", rawText);
+                
+                // Extract all digits from the read content - ensure we get all digits
+                const digits = rawText.replace(/\D/g, '');
+                console.log("Extracted digits:", digits);
+                
+                // Take up to 5 digits, if less than 5 we pad with zeros
                 const cleanAccountId = digits.substring(0, 5).padStart(5, '0');
-                console.log("Found account ID:", cleanAccountId);
+                console.log("Final account ID:", cleanAccountId);
+                
                 onScanComplete(cleanAccountId);
                 if (abortController) {
                   abortController.abort();
@@ -68,8 +73,10 @@ const NfcScanner = ({ isScanning, onScanComplete, onScanError }: NfcScannerProps
           if (event.serialNumber) {
             console.log("Using serial number:", event.serialNumber);
             // Generate a 5-digit ID from serial number hash
-            const hashCode = Array.from(event.serialNumber).reduce(
-              (acc: number, char: string) => (acc * 31 + char.charCodeAt(0)) & 0xffffffff, 0
+            const serialStr = String(event.serialNumber);
+            const hashCode = Array.from(serialStr).reduce(
+              (acc: number, char: string) => (acc * 31 + char.charCodeAt(0)) & 0xffffffff, 
+              0
             );
             const accountId = String(Math.abs(hashCode) % 100000).padStart(5, '0');
             console.log("Generated account ID from serial:", accountId);
