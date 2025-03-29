@@ -23,7 +23,8 @@ const Index = () => {
 
   const handleScan = (accountId: string) => {
     setLastScannedId(accountId);
-    const url = `https://myserver.com/profile/${accountId}`;
+    // Update the URL to include the account ID
+    const url = `https://nfc-health-connect.lovable.app/account/${accountId}`;
     setLastScannedUrl(url);
     setIsScanning(false);
     
